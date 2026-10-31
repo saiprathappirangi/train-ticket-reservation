@@ -4,11 +4,14 @@ on:
   push:
     branches:
       - master
-
-environment:
+      - dev
+      - test
+      - pre-prod
+  workflow_dispatch:
+    inputs:
+      environment:
         description: 'Select environment to deploy'
         required: true
-        default: 'DEV'
         type: choice
         options:
           - DEV
@@ -22,7 +25,7 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-        
+
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
@@ -43,6 +46,7 @@ jobs:
     name: Deploy DEV
     needs: build
     runs-on: ubuntu-latest
+    if: github.event.inputs.environment == 'DEV' || github.ref == 'refs/heads/dev'
     environment:
       name: dev
     env:
@@ -78,11 +82,11 @@ jobs:
            sudo systemctl start '$TOMCAT_SERVICE' && \
            rm -f /tmp/$APP_NAME.war"
 
-  # Repeat similar jobs for TEST, PRE-PROD, PROD
   deploy-test:
     name: Deploy TEST
     needs: build
     runs-on: ubuntu-latest
+    if: github.event.inputs.environment == 'TEST' || github.ref == 'refs/heads/test'
     environment:
       name: test
     env:
@@ -92,12 +96,37 @@ jobs:
       TOMCAT_SERVICE: ${{ vars.TEST_TOMCAT_SERVICE }}
       APP_URL: ${{ vars.TEST_APP_URL }}
     steps:
-      # same steps as deploy-dev but using TEST secrets/vars
+      - name: Download WAR
+        uses: actions/download-artifact@v4
+        with:
+          name: application-war
+          path: ./artifact
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.TEST_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.TEST_SSH_KNOWN_HOSTS }}
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa && chmod 600 ~/.ssh/id_rsa
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts && chmod 600 ~/.ssh/known_hosts
+      - name: Copy WAR to TEST
+        run: scp -i ~/.ssh/id_rsa ./artifact/*.war "$TOMCAT_USER@$TOMCAT_HOST:/tmp/$APP_NAME.war"
+      - name: Deploy TEST
+        run: |
+          ssh -i ~/.ssh/id_rsa "$TOMCAT_USER@$TOMCAT_HOST" \
+          "sudo systemctl stop '$TOMCAT_SERVICE' && \
+           if [ -f '$TOMCAT_WEBAPPS/$APP_NAME.war' ]; then \
+             sudo cp '$TOMCAT_WEBAPPS/$APP_NAME.war' '$TOMCAT_WEBAPPS/$APP_NAME.war.backup'; \
+           fi && \
+           sudo install -m 0644 /tmp/$APP_NAME.war '$TOMCAT_WEBAPPS/$APP_NAME.war' && \
+           sudo systemctl start '$TOMCAT_SERVICE' && \
+           rm -f /tmp/$APP_NAME.war"
 
   deploy-preprod:
     name: Deploy PRE-PROD
     needs: build
     runs-on: ubuntu-latest
+    if: github.event.inputs.environment == 'PRE-PROD' || github.ref == 'refs/heads/pre-prod'
     environment:
       name: pre-prod
     env:
@@ -107,12 +136,37 @@ jobs:
       TOMCAT_SERVICE: ${{ vars.PREPROD_TOMCAT_SERVICE }}
       APP_URL: ${{ vars.PREPROD_APP_URL }}
     steps:
-      # same steps as deploy-dev but using PREPROD secrets/vars
+      - name: Download WAR
+        uses: actions/download-artifact@v4
+        with:
+          name: application-war
+          path: ./artifact
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.PREPROD_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.PREPROD_SSH_KNOWN_HOSTS }}
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa && chmod 600 ~/.ssh/id_rsa
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts && chmod 600 ~/.ssh/known_hosts
+      - name: Copy WAR to PRE-PROD
+        run: scp -i ~/.ssh/id_rsa ./artifact/*.war "$TOMCAT_USER@$TOMCAT_HOST:/tmp/$APP_NAME.war"
+      - name: Deploy PRE-PROD
+        run: |
+          ssh -i ~/.ssh/id_rsa "$TOMCAT_USER@$TOMCAT_HOST" \
+          "sudo systemctl stop '$TOMCAT_SERVICE' && \
+           if [ -f '$TOMCAT_WEBAPPS/$APP_NAME.war' ]; then \
+             sudo cp '$TOMCAT_WEBAPPS/$APP_NAME.war' '$TOMCAT_WEBAPPS/$APP_NAME.war.backup'; \
+           fi && \
+           sudo install -m 0644 /tmp/$APP_NAME.war '$TOMCAT_WEBAPPS/$APP_NAME.war' && \
+           sudo systemctl start '$TOMCAT_SERVICE' && \
+           rm -f /tmp/$APP_NAME.war"
 
   deploy-prod:
     name: Deploy PROD
     needs: build
     runs-on: ubuntu-latest
+    if: github.event.inputs.environment == 'PROD' || github.ref == 'refs/heads/master'
     environment:
       name: prod
     env:
@@ -122,8 +176,20 @@ jobs:
       TOMCAT_SERVICE: ${{ vars.PROD_TOMCAT_SERVICE }}
       APP_URL: ${{ vars.PROD_APP_URL }}
     steps:
-      # same steps as deploy-dev but using PROD secrets/vars
-
+      - name: Download WAR
+        uses: actions/download-artifact@v4
+        with:
+          name: application-war
+          path: ./artifact
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.PROD_SSH_KNOWN_HOSTS }}
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa && chmod 600 ~/.ssh/id_rsa
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts && chmod 600 ~/.ssh/known_hosts
+      - name: Copy WAR to PROD
 
 
 
