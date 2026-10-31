@@ -4,9 +4,7 @@ on:
   push:
     branches:
       - master
-      - dev
-      - test
-      - pre-prod
+  
   workflow_dispatch:
     inputs:
       environment:
