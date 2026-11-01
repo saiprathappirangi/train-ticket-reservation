@@ -171,7 +171,17 @@ jobs:
           mkdir -p ~/.ssh && chmod 700 ~/.ssh
           printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa && chmod 600 ~/.ssh/id_rsa
           printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts && chmod 600 ~/.ssh/known_hosts
-      - name: Copy WAR to PROD
+   - name: Copy WAR to PROD
+  uses: appleboy/scp-action@v0.1.4
+  with:
+    host: ${{ env.TOMCAT_HOST }}
+    username: ${{ env.TOMCAT_USER }}
+    key: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
+    source: "./artifact/*.war"
+    target: "/tmp/${{ env.APP_NAME }}.war"
+
+  
+
 
 
 
