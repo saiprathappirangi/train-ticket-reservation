@@ -4,34 +4,19 @@ on:
   push:
     branches:
       - master
-  
+
   workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Select environment to deploy'
-        required: true
-        type: choice
-        options:
-          - DEV
-          - TEST
-          - PRE-PROD
-          - PROD
 
 jobs:
   build:
+    name: Build WAR
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout Code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-          cache: maven
-
-      - name: Build WAR
+      - name: Maven Build
         run: mvn clean package
 
       - name: Upload WAR
@@ -39,7 +24,6 @@ jobs:
         with:
           name: application-war
           path: target/*.war
-
   deploy-dev:
     name: Deploy DEV
     needs: build
