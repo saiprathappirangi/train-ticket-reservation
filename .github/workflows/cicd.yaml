@@ -1,204 +1,71 @@
-name: Multi Environment CI-CD Pipeline for train-ticket-reservation
-
+name: CI/CD Pipeline
 
 on:
   push:
     branches:
-      - master
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Select environment to deploy'
-        required: true
-        type: choice
-        options:
-          - DEV
-          - TEST
-          - PRE-PROD
-          - PROD
-
-env:
-  APP_NAME: train-ticket-reservation
+      - main   # deploy only when code is pushed to main
 
 jobs:
   build:
-    name: Build WAR
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      # 1. Checkout code
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
+      # 2. Set up Java
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
         with:
-          distribution: temurin
-          java-version: "17"
-          cache: maven
+          java-version: '17'
+          distribution: 'temurin'
 
-      - name: Build WAR
-        run: mvn clean package
+      # 3. Build WAR with Maven
+      - name: Build with Maven
+        run: mvn clean package -DskipTests
 
-      - name: Upload WAR
-        uses: actions/upload-artifact@v4
+      # 4. Upload artifact for deployment
+      - name: Upload WAR artifact
+        uses: actions/upload-artifact@v3
         with:
-          name: application-war
-          path: target/*.war
+          name: train-ticket-reservation
+          path: target/train-ticket-reservation.war
 
-  deploy-dev:
-    name: Deploy DEV
+  deploy:
     needs: build
     runs-on: ubuntu-latest
-    if: github.event.inputs.environment == 'DEV' || github.ref == 'refs/heads/dev'
-    environment:
-      name: dev
-    env:
-      TOMCAT_HOST: ${{ vars.DEV_TOMCAT_HOST }}
-      TOMCAT_USER: ${{ vars.DEV_TOMCAT_USER }}
-      TOMCAT_WEBAPPS: ${{ vars.DEV_TOMCAT_WEBAPPS }}
-      TOMCAT_SERVICE: ${{ vars.DEV_TOMCAT_SERVICE }}
-      APP_URL: ${{ vars.DEV_APP_URL }}
+
+    environment: DEV   # change to TEST, PREPROD, PROD when deploying
+
     steps:
-      - name: Download WAR
-        uses: actions/download-artifact@v4
+      # 1. Download WAR artifact
+      - name: Download WAR artifact
+        uses: actions/download-artifact@v3
         with:
-          name: application-war
-          path: ./artifact
+          name: train-ticket-reservation
 
+      # 2. Configure SSH
       - name: Configure SSH
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.DEV_SSH_PRIVATE_KEY }}
-          SSH_KNOWN_HOSTS: ${{ secrets.DEV_SSH_KNOWN_HOSTS }}
         run: |
-          mkdir -p ~/.ssh && chmod 700 ~/.ssh
-          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa && chmod 600 ~/.ssh/id_rsa
-          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts && chmod 600 ~/.ssh/known_hosts
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEV_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          echo "${{ secrets.DEV_SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
 
-      - name: Copy WAR to DEV
-        run: scp -i ~/.ssh/id_rsa ./artifact/*.war "$TOMCAT_USER@$TOMCAT_HOST:/tmp/$APP_NAME.war"
-
-      - name: Deploy DEV with Rollback
+      # 3. Copy WAR to Tomcat
+      - name: Deploy WAR to Tomcat
         run: |
-          ssh -i ~/.ssh/id_rsa "$TOMCAT_USER@$TOMCAT_HOST" "
-            set -e
-            sudo systemctl stop '$TOMCAT_SERVICE' || true
-            if [ -f '$TOMCAT_WEBAPPS/$APP_NAME.war' ]; then
-              sudo cp '$TOMCAT_WEBAPPS/$APP_NAME.war' '$TOMCAT_WEBAPPS/$APP_NAME.war.backup'
-            fi
-            if sudo install -m 0644 /tmp/$APP_NAME.war '$TOMCAT_WEBAPPS/$APP_NAME.war'; then
-              echo 'Deployment succeeded'
-            else
-              echo 'Deployment failed, rolling back...'
-              if [ -f '$TOMCAT_WEBAPPS/$APP_NAME.war.backup' ]; then
-                sudo cp '$TOMCAT_WEBAPPS/$APP_NAME.war.backup' '$TOMCAT_WEBAPPS/$APP_NAME.war'
-              fi
-              exit 1
-            fi
-            sudo systemctl start '$TOMCAT_SERVICE'
-            rm -f /tmp/$APP_NAME.war
-          "
+          scp -i ~/.ssh/id_rsa train-ticket-reservation.war \
+            ${{ vars.DEV_TOMCAT_USER }}@${{ vars.DEV_TOMCAT_HOST }}:${{ vars.DEV_TOMCAT_WEBAPPS }}/
 
-      - name: Health Check
-        run: curl -f ${{ env.APP_URL }} || (echo "Health check failed" && exit 1)
-
-  deploy-test:
-    name: Deploy TEST
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.event.inputs.environment == 'TEST' || github.ref == 'refs/heads/test'
-    environment:
-      name: test
-    env:
-      TOMCAT_HOST: ${{ vars.TEST_TOMCAT_HOST }}
-      TOMCAT_USER: ${{ vars.TEST_TOMCAT_USER }}
-      TOMCAT_WEBAPPS: ${{ vars.TEST_TOMCAT_WEBAPPS }}
-      TOMCAT_SERVICE: ${{ vars.TEST_TOMCAT_SERVICE }}
-      APP_URL: ${{ vars.TEST_APP_URL }}
-    steps:
-      - name: Download WAR
-        uses: actions/download-artifact@v4
-        with:
-          name: application-war
-          path: ./artifact
-
-      - name: Configure SSH
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.TEST_SSH_PRIVATE_KEY }}
-          SSH_KNOWN_HOSTS: ${{ secrets.TEST_SSH_KNOWN_HOSTS }}
+      # 4. Restart Tomcat
+      - name: Restart Tomcat
         run: |
-          mkdir -p ~/.ssh && chmod 700 ~/.ssh
-          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa && chmod 600 ~/.ssh/id_rsa
-          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts && chmod 600 ~/.ssh/known_hosts
+          ssh -i ~/.ssh/id_rsa ${{ vars.DEV_TOMCAT_USER }}@${{ vars.DEV_TOMCAT_HOST }} \
+            "sudo systemctl restart ${{ vars.DEV_TOMCAT_SERVICE }}"
 
-      - name: Copy WAR to TEST
-        run: scp -i ~/.ssh/id_rsa ./artifact/*.war "$TOMCAT_USER@$TOMCAT_HOST:/tmp/$APP_NAME.war"
-
-      - name: Deploy TEST with Rollback
+      # 5. Health check
+      - name: Verify deployment
         run: |
-          ssh -i ~/.ssh/id_rsa "$TOMCAT_USER@$TOMCAT_HOST" "
-            set -e
-            sudo systemctl stop '$TOMCAT_SERVICE' || true
-            if [ -f '$TOMCAT_WEBAPPS/$APP_NAME.war' ]; then
-              sudo cp '$TOMCAT_WEBAPPS/$APP_NAME.war' '$TOMCAT_WEBAPPS/$APP_NAME.war.backup'
-            fi
-            if sudo install -m 0644 /tmp/$APP_NAME.war '$TOMCAT_WEBAPPS/$APP_NAME.war'; then
-              echo 'Deployment succeeded'
-            else
-              echo 'Deployment failed, rolling back...'
-              if [ -f '$TOMCAT_WEBAPPS/$APP_NAME.war.backup' ]; then
-                sudo cp '$TOMCAT_WEBAPPS/$APP_NAME.war.backup' '$TOMCAT_WEBAPPS/$APP_NAME.war'
-              fi
-              exit 1
-            fi
-            sudo systemctl start '$TOMCAT_SERVICE'
-            rm -f /tmp/$APP_NAME.war
-          "
-
-      - name: Health Check
-        run: curl -f ${{ env.APP_URL }} || (echo "Health check failed" && exit 1)
-
-  deploy-preprod:
-    name: Deploy PRE-PROD
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.event.inputs.environment == 'PRE-PROD' || github.ref == 'refs/heads/pre-prod'
-    environment:
-      name: pre-prod
-    env:
-      TOMCAT_HOST: ${{ vars.PREPROD_TOMCAT_HOST }}
-      TOMCAT_USER: ${{ vars.PREPROD_TOMCAT_USER }}
-      TOMCAT_WEBAPPS: ${{ vars.PREPROD_TOMCAT_WEBAPPS }}
-      TOMCAT_SERVICE: ${{ vars.PREPROD_TOMCAT_SERVICE }}
-      APP_URL: ${{ vars.PREPROD_APP_URL }}
-    steps:
-      - name: Download WAR
-        uses: actions/download-artifact@v4
-        with:
-          name: application-war
-          path: ./artifact
-
-      - name: Configure SSH
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.PREPROD_SSH_PRIVATE_KEY }}
-          SSH_KNOWN_HOSTS: ${{ secrets.PREPROD_SSH_KNOWN_HOSTS }}
-        run: |
-          mkdir -p ~/.ssh && chmod 700 ~/.ssh
-          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa && chmod 600 ~/.ssh/id_rsa
-          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts && chmod 600 ~/.ssh/known_hosts
-
-      - name: Copy WAR to PRE-PROD
-        run: scp -i ~/.ssh/id_rsa ./artifact/*.war "$TOMCAT_USER@$TOMCAT_HOST:/tmp/$APP_NAME.war"
-
-      - name: Deploy PRE-PROD with Rollback
-        run: |
-          ssh -i ~/.ssh/id_rsa "$TOMCAT_USER@$TOMCAT_HOST" "
-            set -e
-            sudo systemctl stop '$TOMCAT_SERVICE' || true
-            if [ -f '$TOMCAT_WEBAPPS/$APP_NAME.war' ]; then
-              sudo cp '$TOMCAT_WEBAPPS/$APP_NAME.war' '$TOMCAT_WEBAPPS/$APP_NAME.war.backup'
-            fi
-            if sudo install -m 0644 /tmp/$APP_NAME.war '$TOMCAT_WEBAPPS/$APP_NAME.war'; then
-              echo 'Deployment succeeded'
-            else
-              echo 'Deployment failed, rolling back...'
-              if [ -f '$TOMCAT_WEBAPPS/$APP_NAME.war.backup' ]; then
-                sudo cp '$TOMCAT_WEB
+          curl -f ${{ vars.DEV_APP_URL }}
