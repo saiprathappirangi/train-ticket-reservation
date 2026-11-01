@@ -30,28 +30,26 @@ promotes the same artifact through four environments:
   `preprod`            Pre-production validation   Required reviewers
   `prod`               Production deployment       Required reviewers
 
-### 3.1 Environment variables
+### 3.1 Environment Secrets
 
 Configure the following variables separately in each Environment:
 
-  -----------------------------------------------------------------------------
-  Variable                Description             Example
-  ----------------------- ----------------------- -----------------------------
-  `TOMCAT_HOST`           Public or reachable     need to give based on the server IP
-                          private IP/DNS name of  
-                          that environment's EC2  
-                          instance                
+| Environment | Secret Name             | Purpose                          | Example Value                |
+|-------------|-------------------------|----------------------------------|------------------------------|
+| **DEV**     | `DEV_TOMCAT_USER`       | Tomcat Manager username          | `admin`                      |
+|             | `DEV_TOMCAT_PASSWORD`   | Tomcat Manager password          | `prathap123`                 |
+|             | `DEV_TOMCAT_HOST`       | EC2 host IP/DNS                  | `13.57.14.61`                |
+| **QA**      | `QA_TOMCAT_USER`        | Tomcat Manager username          | `admin`                      |
+|             | `QA_TOMCAT_PASSWORD`    | Tomcat Manager password          | `prathap123`                 |
+|             | `QA_TOMCAT_HOST`        | EC2 host IP/DNS                  | `54.67.119.218`              |
+| **PREPROD** | `PREPROD_TOMCAT_USER`   | Tomcat Manager username          | `admin`                      |
+|             | `PREPROD_TOMCAT_PASSWORD` | Tomcat Manager password        | `prathap123`                 |
+|             | `PREPROD_TOMCAT_HOST`   | EC2 host IP/DNS                  | `13.57.14.61`                |
+| **PROD**    | `PROD_TOMCAT_USER`      | Tomcat Manager username          | `admin`                      |
+|             | `PROD_TOMCAT_PASSWORD`  | Tomcat Manager password          | `prathap123`                 |
+|             | `PROD_TOMCAT_HOST`      | EC2 host IP/DNS                  | `54.183.72.186`              |
 
-  `TOMCAT_USER`           SSH deployment account  `deploy`
 
-  `TOMCAT_WEBAPPS`        Tomcat webapps          `/var/lib/tomcat10/webapps`
-                          directory               
-
-  `TOMCAT_SERVICE`        systemd service name    `tomcat10`
-
-  `APP_URL`               Application             `http://host:8080/myapp/`
-                          health-check URL        
-  -----------------------------------------------------------------------------
 
 
 
