@@ -3,69 +3,112 @@ name: CI/CD Pipeline
 on:
   push:
     branches:
-      - main   # deploy only when code is pushed to main
+      - master   # deploy only when code is pushed to master
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       # 1. Checkout code
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       # 2. Set up Java
       - name: Set up JDK 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
       # 3. Build WAR with Maven
-      - name: Build with Maven
-        run: mvn clean package -DskipTests
+      - name: Validate
+        run: mvn validate
+      - name: Compile
+        run: mvn compile
+      - name: Test
+        run: mvn test
+      - name: Package
+        run: mvn package
 
-      # 4. Upload artifact for deployment
-      - name: Upload WAR artifact
-        uses: actions/upload-artifact@v3
+      # 4. Verify WAR file
+      - name: Verify WAR file
+        run: ls -lh target/
+
+      # 5. Upload artifact
+      - name: Upload WAR
+        uses: actions/upload-artifact@v4
         with:
-          name: train-ticket-reservation
-          path: target/train-ticket-reservation.war
+          name: application-war
+          path: target/*.war
 
-  deploy:
+  # Deploy DEV
+  deploy-dev:
+    name: Deploy DEV
     needs: build
     runs-on: ubuntu-latest
-
-    environment: DEV   # change to TEST, PREPROD, PROD when deploying
-
+    environment: dev
     steps:
-      # 1. Download WAR artifact
-      - name: Download WAR artifact
-        uses: actions/download-artifact@v3
+      - name: Download WAR
+        uses: actions/download-artifact@v4
         with:
-          name: train-ticket-reservation
-
-      # 2. Configure SSH
-      - name: Configure SSH
+          name: application-war
+          path: ./artifact
+      - name: Deploy to Tomcat DEV
         run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.DEV_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          echo "${{ secrets.DEV_SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          curl -v -u ${{ secrets.DEV_TOMCAT_USER }}:${{ secrets.DEV_TOMCAT_PASSWORD }} \
+          -T ./artifact/TrainBook-1.0.0-SNAPSHOT.war \
+          "http://${{ secrets.DEV_TOMCAT_HOST }}:8080/manager/text/deploy?path=/TrainBook&update=true"
 
-      # 3. Copy WAR to Tomcat
-      - name: Deploy WAR to Tomcat
+  # Deploy QA
+  deploy-qa:
+    name: Deploy QA
+    needs: build
+    runs-on: ubuntu-latest
+    environment: qa
+    steps:
+      - name: Download WAR
+        uses: actions/download-artifact@v4
+        with:
+          name: application-war
+          path: ./artifact
+      - name: Deploy to Tomcat QA
         run: |
-          scp -i ~/.ssh/id_rsa train-ticket-reservation.war \
-            ${{ vars.DEV_TOMCAT_USER }}@${{ vars.DEV_TOMCAT_HOST }}:${{ vars.DEV_TOMCAT_WEBAPPS }}/
+          curl -v -u ${{ secrets.QA_TOMCAT_USER }}:${{ secrets.QA_TOMCAT_PASSWORD }} \
+          -T ./artifact/TrainBook-1.0.0-SNAPSHOT.war \
+          "http://${{ secrets.QA_TOMCAT_HOST }}:8080/manager/text/deploy?path=/TrainBook&update=true"
 
-      # 4. Restart Tomcat
-      - name: Restart Tomcat
+  # Deploy PrePROD
+  deploy-preprod:
+    name: Deploy PrePROD
+    needs: build
+    runs-on: ubuntu-latest
+    environment: preprod
+    steps:
+      - name: Download WAR
+        uses: actions/download-artifact@v4
+        with:
+          name: application-war
+          path: ./artifact
+      - name: Deploy to Tomcat PrePROD
         run: |
-          ssh -i ~/.ssh/id_rsa ${{ vars.DEV_TOMCAT_USER }}@${{ vars.DEV_TOMCAT_HOST }} \
-            "sudo systemctl restart ${{ vars.DEV_TOMCAT_SERVICE }}"
+          curl -v -u ${{ secrets.PREPROD_TOMCAT_USER }}:${{ secrets.PREPROD_TOMCAT_PASSWORD }} \
+          -T ./artifact/TrainBook-1.0.0-SNAPSHOT.war \
+          "http://${{ secrets.PREPROD_TOMCAT_HOST }}:8080/manager/text/deploy?path=/TrainBook&update=true"
 
-      # 5. Health check
-      - name: Verify deployment
+  # Deploy PROD
+  deploy-prod:
+    name: Deploy PROD
+    needs: build
+    runs-on: ubuntu-latest
+    environment: prod   # add required reviewers in GitHub → Settings → Environments
+    steps:
+      - name: Download WAR
+        uses: actions/download-artifact@v4
+        with:
+          name: application-war
+          path: ./artifact
+      - name: Deploy to Tomcat PROD
         run: |
-          curl -f ${{ vars.DEV_APP_URL }}
+          curl -v -u ${{ secrets.PROD_TOMCAT_USER }}:${{ secrets.PROD_TOMCAT_PASSWORD }} \
+          -T ./artifact/TrainBook-1.0.0-SNAPSHOT.war \
+          "http://${{ secrets.PROD_TOMCAT_HOST }}:8080/manager/text/deploy?path=/TrainBook&update=true"
