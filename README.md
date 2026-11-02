@@ -51,8 +51,8 @@ Configure the following variables separately in each Environment:
 
 ## 4 EC2 and AMI Configuration
 ### 4.1 EC2 & Tomcat Install for DEV environment:
-### 4.1.1 Launch EC2 Instance
- ## EC2 Configuration
+
+## EC2 Configuration
 
 ### AMI
 - **Ubuntu 22.04 LTS**
@@ -64,6 +64,29 @@ Configure the following variables separately in each Environment:
 Open the following ports:
 - **22 → SSH** (remote access)
 - **8080 → Tomcat** (web application access)
+#!/bin/bash
+set -e
+
+# Update package lists
+sudo apt update -y
+
+# Install default JDK (OpenJDK)
+sudo apt install -y default-jdk
+
+# Verify Java installation
+java -version
+
+# Install Tomcat 10
+sudo apt install -y tomcat10 tomcat10-admin
+
+# Enable and start Tomcat service
+sudo systemctl enable tomcat10
+sudo systemctl start tomcat10
+
+# Check Tomcat status
+sudo systemctl status tomcat10
+
+
 
 
 
