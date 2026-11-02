@@ -120,6 +120,34 @@ Follow these steps to prepare and create a reusable Amazon Machine Image (AMI) f
 ![Screenshot of AMI used for different environment](Images/AMI-TOMCAT.png)
 
 
+### 5. The creation of four EC2 instances for different environments (DEV, QA, PrePROD, PROD)
+
+  1. use AMI created from DEV for all QA, Prep prod and Prod
+  2. launch remaining three instances with own AMI
+  3. Check all configuration setup in the instances, security groups and tomcat secrets
+### EC2 instances for different environments:
+![ EC2 instances for different environments:](Images/allEC2.png)
+
+### 6. DEV environment deployment output:
+![6. DEV environment deployment output:](Images/DEV.png)
+
+
+### 7. QA environment deployment output:
+![7. QA environment deployment output:](Images/QA.png)
+
+### 8. Pre PROD environment deployment output:
+![8. Pre PROD environment deployment output:](Images/PP.png)
+
+### 9. PROD environment deployment output:
+![9. PROD environment deployment output:](Images/PROD.png)
+
+
+
+
+
+
+  
+
 
 
 
