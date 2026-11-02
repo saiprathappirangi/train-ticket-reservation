@@ -67,24 +67,24 @@ Open the following ports:
 #!/bin/bash
 set -e
 
-# Update package lists
+### Update package lists
 sudo apt update -y
 
-# Install default JDK (OpenJDK)
+### Install default JDK (OpenJDK)
 sudo apt install -y default-jdk
 
-# Verify Java installation
+### Verify Java installation
 java -version
 
-# Install Tomcat 10
-sudo apt install -y tomcat10 tomcat10-admin
+### Install Tomcat 
+wget https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.123/bin/apache-tomcat-9.0.123.tar.gz
 
-# Enable and start Tomcat service
-sudo systemctl enable tomcat10
-sudo systemctl start tomcat10
+### Enable and start Tomcat service
+sudo systemctl enable tomcat
+sudo systemctl start tomcat
 
-# Check Tomcat status
-sudo systemctl status tomcat10
+### Check Tomcat status
+sudo systemctl status tomcat
 
 
 
