@@ -116,7 +116,7 @@ Follow these steps to prepare and create a reusable Amazon Machine Image (AMI) f
    
   ### Screenshot of AMI used for different environment
 
-![Screenshot of AMI used for different environment](images/ami.png)
+![Screenshot of AMI used for different environment](Images/AMI-TOMCAT.png)
 
 
 
