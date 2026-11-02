@@ -1,19 +1,18 @@
 # Multi‑Environment CI/CD Deployment for TOMCAT
 
-## 1. Continuous Integration and Continuous Deployment Workflow
+## Workflow Summary
 
-This repository implements a GitHub Actions pipeline that builds a Maven‑based WAR file once and 
-promotes the same artifact through four environments:
-
--   **DEV** -- automatic deployment after a push to the configured
-    deployment branch.
--   **TEST** -- deployment starts after DEV succeeds and requires
-    approval.
--   **PREPROD** -- deployment starts after TEST succeeds and requires
-    approval.
--   **PROD** -- deployment starts after PREPROD succeeds and requires
-    approval.
-  Each environment runs on its own Tomcat EC2 instance with separate secrets and variables configured in GitHub Environments.
+- **Trigger:** Runs automatically on every push to the `master` branch.  
+- **Build Stage:**
+  - Checkout source code.  
+  - Set up **Java 17 (Temurin distribution)**.  
+  - Run Maven lifecycle: `validate`, `compile`, `test`, `package`.  
+  - Upload the generated WAR file as an artifact.  
+- **Deployment Stages:**
+  - Each environment downloads the artifact.  
+  - Deploys to Tomcat via **Manager API** using `curl`.  
+  - Credentials and host details are securely stored in **GitHub Secrets**.  
+  - Higher environments (PrePROD, PROD) require manual approval via **GitHub → Settings → Environments**.
 
 ## 2. Architecture
 
@@ -64,30 +63,18 @@ Configure the following variables separately in each Environment:
 Open the following ports:
 - **22 → SSH** (remote access)
 - **8080 → Tomcat** (web application access)
-#!/bin/bash
-set -e
 
-### Update package lists
-sudo apt update -y
+### Connect EC2 instance and bash the following commands 
 
-### Install default JDK (OpenJDK)
-sudo apt install -y default-jdk
-
-### Verify Java installation
-java -version
-
-### Install Tomcat 
-wget https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.123/bin/apache-tomcat-9.0.123.tar.gz
-
-### Enable and start Tomcat service
-sudo systemctl enable tomcat
-sudo systemctl start tomcat
-
-### Check Tomcat status
-sudo systemctl status tomcat
+```bash
 
 
 
+
+
+comment out or remove this line
+By default, Tomcat restricts Manager access to localhost
+defined a user with the correct role:
 
 
 
