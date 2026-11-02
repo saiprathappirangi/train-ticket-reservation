@@ -15,6 +15,7 @@
   - Higher environments (PrePROD, PROD) require manual approval via **GitHub → Settings → Environments**.
 
 ## 2. Architecture
+![2. Architecture](Images/Architecture.png)
 
 
 
