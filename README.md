@@ -64,17 +64,34 @@ Open the following ports:
 - **22 → SSH** (remote access)
 - **8080 → Tomcat** (web application access)
 
-### Connect EC2 instance and bash the following commands 
+### Tomcat deployment and validation  
 
 ```bash
+sudo -i                                                                                   # To become a root use
+apt update -y                                                                             # Upgrading packages.
+apt install default-jdk -y                                                                # Install the default java application
+java --version                                                                            # Check java installed
+wget https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.123/bin/apache-tomcat-9.0.123.tar.gz   # Install TOMCAT
+tar -xf apache-tomcat-9.0.123.tar.gz                                                      # Extract files from a tar archive
+mv apache-tomcat-9.0.12 tomcat                                                            # Rename the file
+~/tomcat/webapps/host-manager/META-INF#                                                   # Navigate to META-INF Folder
+vim context.xml                                                                           # open file called context.xml
+<!--
+<Valve className="org.apache.catalina.valves.RemoteAddrValve"                             # Comment out or remove this line for both manager and host-manager
+       allow="127.0.0./8::1/128"/> -->                                                    # By default, Tomcat restricts Manager access to localhost
+<role rolename="manager-gui"/>
+<user username="tomcat" password="s3cret" roles="manager-gui"/>                           # Defined a user with the correct roles
+<role rolename="manager-script"/>
+<user username="prathap123" password="prathap123" roles="manager-script"/>                # Defined a user with the correct roles
+<role rolename="admin-gui"/>
+<user username="admin" password="admin123" roles="admin-gui"/>
+~/tomcat/bin# ./shutdown.sh                                                               # Shutdown tomcat 
+~/tomcat/bin# ./shartup.sh                                                                # Start the Tomcat
+54.18372.186:8080/TrainBook/                                                              # Search in URL
+```
 
 
 
-
-
-comment out or remove this line
-By default, Tomcat restricts Manager access to localhost
-defined a user with the correct role:
 
 
 
