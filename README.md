@@ -104,9 +104,8 @@ Follow these steps to prepare and create a reusable Amazon Machine Image (AMI) f
 
 1. **Validate Services on DEV**
    - Confirm Tomcat is running and accessible.
-   - Verify SSH login works with the `deploy` user.
    - Test deployment permissions (upload WAR via Tomcat Manager).
-   - Ensure service restart (`systemctl restart tomcat10`) works without issues.
+   - Ensure service restart (`systemctl restart tomcat`) works without issues.
 
 2. **Run Provisioning Script in `prepare-ami` Mode**
    - Execute the provisioning script with the `prepare-ami` flag.
