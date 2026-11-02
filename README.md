@@ -90,8 +90,33 @@ vim context.xml                                                                 
 54.18372.186:8080/TrainBook/                                                              # Search in URL
 ```
 
-### Create Image from EC2 AND AMI:
+### Creating the AMI:
+Follow these steps to prepare and create a reusable Amazon Machine Image (AMI) from the DEV environment.
+#### Steps
 
+1. **Validate Services on DEV**
+   - Confirm Tomcat is running and accessible.
+   - Verify SSH login works with the `deploy` user.
+   - Test deployment permissions (upload WAR via Tomcat Manager).
+   - Ensure service restart (`systemctl restart tomcat10`) works without issues.
+
+2. **Run Provisioning Script in `prepare-ami` Mode**
+   - Execute the provisioning script with the `prepare-ami` flag.
+   - This cleans up environment‑specific data and prepares the instance for image creation.
+
+3. **Confirm SSH Host Key Cleanup**
+   - Verify that instance‑specific SSH host keys have been removed.
+   - This ensures the AMI is reusable and avoids conflicts when launching new instances.
+
+4. **Stop DEV Instance and Create AMI**
+   - Shut down the DEV EC2 instance.
+   - From the AWS Console or CLI, create an AMI from the stopped instance.
+   - Tag the AMI appropriately (e.g., `TrainBook-Base-AMI`) for easy identification.
+
+   
+  ### Screenshot of AMI used for different environment
+
+![Screenshot of AMI used for different environment](images/ami.png)
 
 
 
