@@ -49,6 +49,10 @@ Configure the following variables separately in each Environment:
 |             | `PROD_TOMCAT_PASSWORD`  | Tomcat Manager password          | `prathap123`                 |
 |             | `PROD_TOMCAT_HOST`      | EC2 host IP/DNS                  | `54.183.72.186`              |
 
+### Environment Secret 
+![Environment Secret ](Images/ES.png)
+
+
 ## 4 EC2 and AMI Configuration
 ### 4.1 EC2 & Tomcat Install for DEV environment:
 
