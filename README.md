@@ -90,7 +90,7 @@ vim context.xml                                                                 
 54.18372.186:8080/TrainBook/                                                              # Search in URL
 ```
 
-
+### Create Image from EC2 AND AMI:
 
 
 
