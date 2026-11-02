@@ -26,7 +26,7 @@
   GitHub Environment   Purpose                     Approval
   -------------------- --------------------------- ----------------------
   `dev`                Development deployment      No required reviewer
-  `test`               Test deployment             Required reviewers
+  `qa`               Test deployment             Required reviewers
   `preprod`            Pre-production validation   Required reviewers
   `prod`               Production deployment       Required reviewers
 
@@ -91,7 +91,7 @@ vim context.xml                                                                 
 <role rolename="admin-gui"/>
 <user username="admin" password="admin123" roles="admin-gui"/>
 ~/tomcat/bin# ./shutdown.sh                                                               # Shutdown tomcat 
-~/tomcat/bin# ./shartup.sh                                                                # Start the Tomcat
+~/tomcat/bin# ./startup.sh                                                                # Start the Tomcat
 54.18372.186:8080/TrainBook/                                                              # Search in URL
 ```
 ### GitHub Actions deployment:
