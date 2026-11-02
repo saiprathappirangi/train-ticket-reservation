@@ -90,6 +90,9 @@ vim context.xml                                                                 
 ~/tomcat/bin# ./shartup.sh                                                                # Start the Tomcat
 54.18372.186:8080/TrainBook/                                                              # Search in URL
 ```
+### GitHub Actions deployment:
+![ GitHub Actions deployment:](Images/GIT.png)
+
 
 ### Creating the AMI:
 Follow these steps to prepare and create a reusable Amazon Machine Image (AMI) from the DEV environment.
