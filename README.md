@@ -52,11 +52,11 @@ Configure the following variables separately in each Environment:
 ## 4 EC2 and AMI Configuration
 ### 4.1 EC2 & Tomcat Install for DEV environment:
 ### 4.1.1 Launch EC2 Instance
-      AMI: Ubuntu 22.04 LTS
-      Instance type: t2.micro (for testing)
-      Security group: open ports
-                      22 → SSH
-                      8080 → Tomcat
+AMI: Ubuntu 22.04 LTS
+Instance type: t2.micro (for testing)
+Security group: open ports
+                22 → SSH
+                8080 → Tomcat
 
 
 
